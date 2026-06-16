@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flashcards — ウィリアム</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --night:  #1a1a2e;
+  --paper:  #f5f0e8;
+  --washi:  #ede7d9;
+  --torii:  #c0392b;
+  --moss:   #2d6a4f;
+  --ink:    #2c2c2c;
+  --muted:  #8a8070;
+  --border: #d4cab8;
+  --shadow: rgba(26,26,46,0.18);
+  --panel:  rgba(255,255,255,.045);
+  --panelb: rgba(255,255,255,.08);
+}
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--night);
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 24px 16px 56px;
+  color: var(--paper);
+}
+
+/* ── Header ── */
+header {
+  width: 100%; max-width: 720px;
+  display: flex; flex-direction: column; align-items: flex-start;
+  margin-bottom: 28px; gap: 8px;
+}
+.app-title { font-family:'Noto Sans JP',sans-serif; font-size:1.05rem; font-weight:600; letter-spacing:.06em; opacity:.9; }
+.app-title span { color:var(--torii); }
+#stats { display:flex; gap:16px; font-size:.72rem; }
+.stat { display:flex; align-items:center; gap:5px; opacity:.5; }
+.stat .dot { width:7px; height:7px; border-radius:50%; }
+.dot-no  { background:var(--torii); }
+.dot-yes { background:#2d6a4f; }
+
+/* ── Section label ── */
+.section-label { font-size:.68rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; opacity:.4; margin-bottom:10px; }
+
+/* ════ LIBRARY ════ */
+#screen-library { width:100%; max-width:720px; display:flex; flex-direction:column; gap:22px; }
+
+/* GitHub Decks Section */
+#github-decks-section {
+  background:var(--panel); border:1px solid rgba(255,255,255,.08);
+  border-radius:14px; padding:16px; margin-bottom:6px;
+}
+#github-decks-section h3 {
+  font-size:.82rem; font-weight:600; margin-bottom:10px; opacity:.85;
+}
+#github-deck-list {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:10px;
+}
+.github-deck-card {
+  background:var(--panelb); border:1px solid rgba(255,255,255,.1);
+  border-radius:10px; padding:12px; cursor:pointer;
+  transition:background .18s,border-color .18s,transform .12s;
+  display:flex; flex-direction:column; gap:6px;
+}
+.github-deck-card:hover { background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.2); transform:translateY(-1px); }
+.github-deck-card.loading { opacity:.5; pointer-events:none; }
+.deck-name { font-size:.8rem; font-weight:600; word-break:break-word; }
+.deck-meta { font-size:.65rem; opacity:.5; }
+.deck-icon { font-size:1.2rem; margin-bottom:2px; }
+#github-loading { font-size:.7rem; opacity:.5; text-align:center; padding:8px; }
+#github-error { font-size:.7rem; color:#f5c6c1; padding:8px; text-align:center; }
+
+#drop-zone {
+  border:1.5px dashed rgba(255,255,255,.15); border-radius:14px;
+  padding:26px 24px; text-align:center; cursor:pointer;
+  transition:border-color .2s, background .2s;
+}
+#drop-zone.drag-over { border-color:var(--torii); background:rgba(192,57,43,.07); }
+#drop-zone p { font-size:.78rem; opacity:.4; margin-top:8px; line-height:1.6; }
+.file-btn {
+  display:inline-block; cursor:pointer;
+  background:rgba(192,57,43,.16); border:1px solid rgba(192,57,43,.5);
+  color:#f5c6c1; font-family:'Inter',sans-serif;
+  font-size:.8rem; font-weight:500; letter-spacing:.04em;
+  padding:8px 20px; border-radius:8px; transition:background .2s;
+}
+.file-btn:hover { background:rgba(192,57,43,.3); }
+#file-input { display:none; }
+
+#folder-name-row { display:flex; gap:10px; align-items:center; margin-bottom:6px; }
+#folder-name-input {
+  flex:1; background:var(--panel); border:1px solid rgba(255,255,255,.1);
+  color:var(--paper); font-family:'Inter',sans-serif; font-size:.82rem;
+  padding:9px 14px; border-radius:8px; outline:none; transition:border-color .2s;
+}
+#folder-name-input::placeholder { opacity:.35; }
+#folder-name-input:focus { border-color:rgba(255,255,255,.3); }
+
+#folder-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+.folder-card {
+  background:var(--panel); border:1px solid rgba(255,255,255,.08);
+  border-radius:14px; padding:18px 18px 14px;
+  cursor:pointer; transition:background .18s,border-color .18s,transform .12s;
+  position:relative; display:flex; flex-direction:column; gap:6px;
+  -webkit-tap-highlight-color: transparent; user-select:none;
+}
+.folder-card:hover { background:var(--panelb); border-color:rgba(255,255,255,.16); transform:translateY(-2px); }
+.folder-icon { font-size:1.5rem; }
+.folder-title { font-size:.88rem; font-weight:600; line-height:1.3; word-break:break-word; }
+.folder-meta { font-size:.7rem; opacity:.4; }
+.folder-streak { font-size:.68rem; color:#f0c674; opacity:.75; }
+.folder-del {
+  position:absolute; top:10px; right:10px;
+  background:none; border:none; color:rgba(255,255,255,.2);
+  font-size:.85rem; cursor:pointer; padding:2px 5px; border-radius:4px;
+  transition:color .15s,background .15s;
+}
+.folder-del:hover { color:#f5c6c1; background:rgba(192,57,43,.25); }
+.empty-hint { font-size:.78rem; opacity:.28; text-align:center; padding:24px 0; }
+
+/* tag filter — dropdown multi-select */
+#tag-filter-row { width:100%; margin-bottom:14px; position:relative; }
+#tag-trigger {
+  display:flex; align-items:center; gap:8px;
+  background:var(--panel); border:1px solid rgba(255,255,255,.1);
+  color:var(--paper); font-family:'Inter',sans-serif; font-size:.75rem; font-weight:500;
+  padding:7px 13px; border-radius:8px; cursor:pointer;
+  transition:background .18s; user-select:none; width:100%;
+  -webkit-tap-highlight-color: transparent;
+}
+#tag-trigger:hover { background:var(--panelb); }
+#tag-trigger .t-arrow { font-size:.6rem; opacity:.4; margin-left:auto; transition:transform .2s; }
+#tag-trigger.open .t-arrow { transform:rotate(180deg); }
+#tag-selected-preview { flex:1; opacity:.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#tag-dropdown {
+  display:none; position:absolute; top:calc(100% + 5px); left:0; right:0; z-index:100;
+  background:#22223a; border:1px solid rgba(255,255,255,.12);
+  border-radius:12px; padding:8px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+#tag-dropdown.open { display:block; }
+.tag-opt {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 10px; border-radius:8px; cursor:pointer;
+  font-size:.78rem; transition:background .15s; user-select:none;
+  -webkit-tap-highlight-color: transparent;
+}
+.tag-opt:hover { background:var(--panelb); }
+.tag-opt .t-check {
+  width:15px; height:15px; border-radius:4px; border:1.5px solid rgba(255,255,255,.25);
+  display:flex; align-items:center; justify-content:center; font-size:.65rem; flex-shrink:0;
+  transition:background .15s, border-color .15s;
+}
+.tag-opt.selected .t-check { background:var(--torii); border-color:var(--torii); }
+.tag-opt.selected .t-check::after { content:'✓'; color:#fff; }
+.tag-opt .t-name { flex:1; }
+.tag-opt .t-count { font-size:.65rem; opacity:.4; }
+.tag-opt-all { border-bottom:1px solid rgba(255,255,255,.07); margin-bottom:6px; padding-bottom:10px; }
+#screen-study { display:none; flex-direction:column; align-items:center; width:100%; max-width:680px; }
+#screen-study.visible { display:flex; }
+
+#study-header { width:100%; display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+#btn-back {
+  background:var(--panel); border:1px solid rgba(255,255,255,.1);
+  color:var(--paper); font-size:.8rem; font-family:'Inter',sans-serif;
+  padding:7px 14px; border-radius:8px; cursor:pointer; transition:background .18s;
+}
+#btn-back:hover { background:var(--panelb); }
+#study-folder-name { font-weight:600; font-size:.95rem; opacity:.85; flex:1; }
+
+/* study options row */
+#study-options {
+  width:100%; display:flex; align-items:center; gap:10px; margin-bottom:18px; flex-wrap:wrap;
+}
+.opt-toggle {
+  display:flex; align-items:center; gap:6px;
+  background:var(--panel); border:1px solid rgba(255,255,255,.1);
+  color:var(--paper); font-family:'Inter',sans-serif; font-size:.74rem; font-weight:500;
+  padding:6px 12px; border-radius:8px; cursor:pointer; transition:background .18s, border-color .18s;
+  user-select:none;
+}
+.opt-toggle.active { background:rgba(192,57,43,.18); border-color:rgba(192,57,43,.45); color:#f5c6c1; }
+.opt-toggle .opt-icon { font-size:.9rem; }
+
+/* deck bar */
+#deck-bar { width:100%; display:flex; align-items:center; gap:12px; margin-bottom:20px; font-size:.75rem; opacity:.5; }
+#progress-bar-wrap { flex:1; height:3px; background:rgba(255,255,255,.1); border-radius:2px; overflow:hidden; }
+#progress-bar { height:100%; background:var(--torii); border-radius:2px; transition:width .4s ease; width:0%; }
+
+/* card */
+#card-scene { width:100%; perspective:1200px; margin-bottom:14px; max-height:210px; overflow:hidden; border-radius:18px; }
+#card-inner {
+  position:relative; width:100%; height:210px;
+  transform-style:preserve-3d;
+  transition:transform .52s cubic-bezier(.4,0,.2,1);
+  cursor:pointer;
+}
+#card-inner.flipped { transform:rotateY(180deg); }
+.card-face {
+  position:absolute; width:100%; height:100%;
+  backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  border-radius:18px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:16px 24px; user-select:none; overflow:hidden;
+}
+.card-front {
+  background:var(--paper); border:1px solid var(--border);
+  box-shadow:0 12px 48px var(--shadow),0 2px 8px rgba(0,0,0,.08);
+}
+.card-back {
+  background:var(--washi); border:1px solid var(--border);
+  box-shadow:0 12px 48px var(--shadow);
+  transform:rotateY(180deg);
+}
+.card-label { font-size:.62rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:18px; align-self:flex-start; }
+.card-text { font-family:'Noto Sans JP',sans-serif; font-size:1.7rem; font-weight:400; color:var(--ink); text-align:center; line-height:1.5; word-break:break-word; }
+.card-hint { margin-top:14px; font-size:.7rem; color:var(--muted); opacity:.55; }
+
+/* speak button on front card */
+#btn-speak-front {
+  margin-top:12px; background:none; border:1px solid rgba(44,44,44,.2);
+  border-radius:8px; padding:5px 14px; font-size:.72rem; color:var(--muted);
+  cursor:pointer; font-family:'Inter',sans-serif; transition:background .18s,color .18s;
+}
+#btn-speak-front:hover { background:rgba(44,44,44,.06); color:var(--ink); }
+#btn-speak-front.speaking { color:var(--torii); border-color:var(--torii); }
+  margin-top:16px; background:none; border:1px solid rgba(44,44,44,.25);
+  border-radius:8px; padding:5px 14px; font-size:.75rem; color:var(--muted);
+  cursor:pointer; font-family:'Inter',sans-serif; transition:background .18s,color .18s;
+  display:none;
+}
+#btn-speak:hover { background:rgba(44,44,44,.08); color:var(--ink); }
+#btn-speak.speaking { color:var(--torii); border-color:var(--torii); }
+
+/* typing mode */
+#type-area { width:100%; display:none; flex-direction:column; align-items:center; gap:10px; margin-bottom:20px; }
+#type-area.visible { display:flex; }
+#type-input {
+  width:100%; max-width:420px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.18);
+  color:var(--paper); font-family:'Noto Sans JP',sans-serif; font-size:1.1rem;
+  padding:12px 18px; border-radius:12px; outline:none; text-align:center;
+  transition:border-color .2s;
+}
+#type-input:focus { border-color:rgba(255,255,255,.38); }
+#type-input.correct { border-color:#2d6a4f; background:rgba(45,106,79,.12); }
+#type-input.wrong   { border-color:var(--torii); background:rgba(192,57,43,.1); }
+#type-feedback { font-size:1.1rem; font-weight:600; opacity:.9; min-height:1.4em; text-align:center; }
+#type-answer-reveal { font-size:1rem; opacity:.75; font-family:'Noto Sans JP',sans-serif; min-height:1.4em; text-align:center; }
+#btn-type-check {
+  background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.18);
+  color:var(--paper); font-family:'Inter',sans-serif; font-size:.82rem; font-weight:600;
+  padding:10px 28px; border-radius:10px; cursor:pointer; transition:background .18s;
+}
+#btn-type-check:hover { background:rgba(255,255,255,.15); }
+
+/* action buttons */
+#actions { width:100%; display:flex; gap:12px; align-items:center; }
+.action-btn {
+  flex:1; border:none; border-radius:50px;
+  font-family:'Inter',sans-serif; font-size:.82rem; font-weight:600; letter-spacing:.04em;
+  padding:14px 12px; cursor:pointer;
+  transition:transform .12s, background .18s;
+  display:flex; flex-direction:row; align-items:center; justify-content:center; gap:8px;
+}
+.action-btn:active { transform:scale(.96); }
+.action-btn .icon { font-size:1.1rem; }
+
+#btn-no   { background:rgba(192,57,43,.18); color:#f5c6c1; border:1px solid rgba(192,57,43,.45); }
+#btn-no:hover { background:rgba(192,57,43,.30); }
+#btn-flip { background:rgba(255,255,255,.08); color:var(--paper); border:1px solid rgba(255,255,255,.18); }
+#btn-flip:hover { background:rgba(255,255,255,.14); }
+#btn-yes  { background:rgba(45,106,79,.22); color:#a8d5b9; border:1px solid rgba(45,106,79,.5); }
+#btn-yes:hover { background:rgba(45,106,79,.36); }
+
+/* done state */
+#state-done { display:none; flex-direction:column; align-items:center; text-align:center; gap:14px; margin-top:20px; }
+#state-done.visible { display:flex; }
+#state-done .big { font-size:3rem; }
+#state-done h2 { font-size:1.2rem; font-weight:600; }
+#state-done p { font-size:.83rem; opacity:.5; line-height:1.6; max-width:320px; }
+.restart-btn {
+  background:rgba(192,57,43,.15); border:1px solid rgba(192,57,43,.4);
+  color:#f5c6c1; font-family:'Inter',sans-serif;
+  font-size:.8rem; font-weight:500; padding:9px 24px; border-radius:9px; cursor:pointer; transition:background .2s;
+}
+.restart-btn:hover { background:rgba(192,57,43,.3); }
+
+/* stats history */
+#stats-panel { width:100%; margin-top:6px; }
+.stats-history { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:6px; }
+.stat-pill {
+  font-size:.68rem; padding:3px 10px; border-radius:20px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); opacity:.65;
+}
+
+/* GitHub Decks — lista suspensa */
+#github-decks-section {
+  background:var(--panel); border:1px solid rgba(255,255,255,.08);
+  border-radius:14px; overflow:hidden; margin-bottom:4px;
+}
+#github-decks-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; cursor:pointer; user-select:none;
+  font-size:.82rem; font-weight:600; opacity:.85;
+  transition:background .18s;
+  -webkit-tap-highlight-color: transparent;
+}
+#github-decks-header:hover { background:var(--panelb); }
+#github-arrow { font-size:.65rem; opacity:.45; transition:transform .25s; }
+#github-arrow.open { transform:rotate(180deg); }
+#github-decks-body { display:none; padding:0 12px 12px; }
+#github-decks-body.open { display:block; }
+#github-deck-list { display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+.github-deck-card {
+  display:flex; align-items:center; gap:10px;
+  background:var(--panelb); border:1px solid rgba(255,255,255,.08);
+  border-radius:9px; padding:9px 12px; cursor:pointer;
+  transition:background .18s, border-color .15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.github-deck-card:hover { background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.18); }
+.github-deck-card.loading { opacity:.5; pointer-events:none; }
+.deck-name { font-size:.8rem; font-weight:600; flex:1; }
+.deck-meta { font-size:.65rem; opacity:.4; }
+.deck-icon { font-size:1rem; }
+#github-loading { font-size:.7rem; opacity:.5; text-align:center; padding:8px; }
+#github-error { font-size:.7rem; color:#f5c6c1; padding:8px; text-align:center; }
+
+/* botão som abaixo dos actions */
+#btn-speak-front {
+  margin-top:10px; background:none; border:1px solid rgba(255,255,255,.12);
+  border-radius:50%; width:38px; height:38px; font-size:1.2rem;
+  cursor:pointer; transition:background .18s, border-color .18s;
+  display:flex; align-items:center; justify-content:center;
+}
+#btn-speak-front:hover { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.25); }
+#btn-speak-front.speaking { border-color:var(--torii); background:rgba(192,57,43,.15); }
+
+/* barra de revisão rápida */
+#quick-review-bar {
+  display:none; width:100%; margin-top:14px;
+  flex-direction:column; gap:8px;
+}
+#quick-review-bar.visible { display:flex; }
+.qr-row { display:flex; gap:8px; }
+.qr-btn {
+  flex:1; border:none; border-radius:50px;
+  font-family:'Inter',sans-serif; font-size:.72rem; font-weight:600;
+  padding:9px 10px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  transition:background .18s, transform .1s;
+}
+.qr-btn:active { transform:scale(.96); }
+.qr-btn .qr-icon { font-size:.95rem; }
+.qr-btn .qr-count {
+  font-size:.65rem; font-weight:700; opacity:.7;
+  background:rgba(0,0,0,.15); border-radius:20px; padding:1px 6px;
+}
+#qr-no  { background:rgba(192,57,43,.16); color:#f5c6c1; border:1px solid rgba(192,57,43,.4); }
+#qr-no:hover  { background:rgba(192,57,43,.28); }
+#qr-yes { background:rgba(45,106,79,.18); color:#a8d5b9; border:1px solid rgba(45,106,79,.45); }
+#qr-yes:hover { background:rgba(45,106,79,.32); }
+#qr-restart { background:rgba(255,255,255,.07); color:var(--paper); border:1px solid rgba(255,255,255,.15); }
+#qr-restart:hover { background:rgba(255,255,255,.13); }
+
+/* import button */
+#import-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(192,57,43,.14); border:1px solid rgba(192,57,43,.4);
+  color:#f5c6c1; font-family:'Inter',sans-serif; font-size:.75rem; font-weight:500;
+  padding:6px 14px; border-radius:8px; cursor:pointer; transition:background .2s; user-select:none;
+}
+#import-btn:hover { background:rgba(192,57,43,.26); }
+
+/* ── Imagem no card (frente) ── */
+#card-front-img {
+  max-width: 100%;
+  max-height: 110px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  display: none;
+  flex-shrink: 1;
+  mix-blend-mode: multiply;
+}
+#card-front-img.visible { display: block; }
+.card-front { gap: 4px; padding: 14px 24px; justify-content: center; }
+.card-front .card-hint { margin-top: 2px; font-size:.65rem; }
+/* Esconder texto da frente e label quando houver imagem */
+.card-front.has-img #front-text { display: none; }
+.card-front.has-img .card-label { display: none; }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="app-title">フラッシュカード <span>·</span> ウィリアム</div>
+  <div id="stats">
+    <div class="stat"><div class="dot dot-no"></div><span id="stat-no">0 não sei</span></div>
+    <div class="stat"><div class="dot dot-yes"></div><span id="stat-yes">0 já sei</span></div>
+  </div>
+</header>
+
+<!-- ══ LIBRARY ══ -->
+<div id="screen-library">
+  <!-- GitHub Decks — lista suspensa -->
+  <div id="github-decks-section" style="display:none;">
+    <div id="github-decks-header">
+      <span>☁️ Decks na nuvem</span>
+      <span id="github-arrow">▼</span>
+    </div>
+    <div id="github-decks-body">
+      <div id="github-loading">Carregando decks...</div>
+      <div id="github-deck-list"></div>
+      <div id="github-error" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div style="display:flex; align-items:center; justify-content:space-between;">
+    <div class="section-label" style="margin-bottom:0">Suas pastas</div>
+    <label id="import-btn" for="file-input" title="Importar do computador / celular">
+      📁 Importar
+      <input type="file" id="file-input" accept=".csv,.txt" multiple style="display:none">
+    </label>
+  </div>
+  <div id="folder-grid">
+    <div class="empty-hint">Nenhuma pasta ainda — importe pelo GitHub ou pelo botão acima</div>
+  </div>
+</div>
+
+<!-- ══ STUDY ══ -->
+<div id="screen-study">
+
+  <div id="study-header">
+    <button id="btn-back">← Pastas</button>
+    <span id="study-folder-name">—</span>
+  </div>
+
+  <!-- options row -->
+  <div id="study-options">
+    <div class="opt-toggle" id="opt-shuffle" title="Embaralhar cartões">
+      <span class="opt-icon">🔀</span> Embaralhar
+    </div>
+    <div class="opt-toggle" id="opt-type" title="Modo digitação">
+      <span class="opt-icon">⌨️</span> Digitar
+    </div>
+    <div class="opt-toggle" id="opt-srs" title="Repetição espaçada">
+      <span class="opt-icon">🧠</span> SRS
+    </div>
+    <div class="opt-toggle" id="opt-sound" title="Pronunciar resposta">
+      <span class="opt-icon">🔊</span> Som
+    </div>
+  </div>
+
+  <!-- tag filter dropdown multi-select -->
+  <div id="tag-filter-row" style="display:none;">
+    <div id="tag-trigger">
+      🏷 <span id="tag-selected-preview">Todas as tags</span>
+      <span class="t-arrow">▼</span>
+    </div>
+    <div id="tag-dropdown"></div>
+  </div>
+
+  <div id="deck-bar">
+    <span id="deck-pos">0 / 0</span>
+    <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+    <span id="deck-remaining">restantes</span>
+  </div>
+
+  <div id="card-scene">
+    <div id="card-inner">
+      <div class="card-face card-front">
+        <div class="card-label">Frente</div>
+        <img id="card-front-img" src="" alt="" />
+        <div class="card-text" id="front-text">—</div>
+        <div class="card-hint" id="card-hint">clique para revelar · espaço</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-label">Verso</div>
+        <div class="card-text" id="back-text">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- typing area (shown instead of card flip in type mode) -->
+  <div id="type-area">
+    <input type="text" id="type-input" placeholder="Digite a resposta…" autocomplete="off" autocorrect="off" spellcheck="false">
+    <div id="type-feedback"></div>
+    <div id="type-answer-reveal"></div>
+    <button id="btn-type-check">Confirmar · Enter</button>
+  </div>
+
+  <div id="actions">
+    <button class="action-btn" id="btn-no"><span class="icon">✗</span>Não sei</button>
+    <button class="action-btn" id="btn-flip"><span class="icon">👁</span>Ver resposta</button>
+    <button class="action-btn" id="btn-yes"><span class="icon">✓</span>Já sei</button>
+  </div>
+
+  <!-- botão de som abaixo do botão central -->
+  <button id="btn-speak-front" style="display:none;">🔊</button>
+
+  <!-- revisão rápida mid-deck -->
+  <div id="quick-review-bar">
+    <div class="qr-row">
+      <button class="qr-btn" id="qr-no">
+        <span class="qr-icon">✗</span> Revisar não sei <span class="qr-count" id="qr-no-count">0</span>
+      </button>
+      <button class="qr-btn" id="qr-yes">
+        <span class="qr-icon">✓</span> Revisar já sei <span class="qr-count" id="qr-yes-count">0</span>
+      </button>
+    </div>
+    <div class="qr-row">
+      <button class="qr-btn" id="qr-restart">
+        <span class="qr-icon">↺</span> Reiniciar deck
+      </button>
+    </div>
+  </div>
+
+  <div id="state-done">
+    <div class="big">🎌</div>
+    <h2>Pasta concluída!</h2>
+    <p id="done-summary">—</p>
+    <div id="stats-panel">
+      <div class="stats-history" id="stats-history"></div>
+    </div>
+    <button class="restart-btn" id="btn-restart" style="margin-top:8px">Reiniciar pasta</button>
+    <button class="restart-btn" id="btn-retry-no">Revisar "não sei"</button>
+  </div>
+
+</div>
+
+<script>
+const GITHUB_OWNER = 'wodasouto';
+const GITHUB_REPO = 'FlashcardAPP';
+const GITHUB_DECKS_PATH = 'Decks';
+
+// Detecta se é iOS
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+// ══════════════════════════════════════
+//  STORAGE
+// ══════════════════════════════════════
+let folders = JSON.parse(localStorage.getItem('fc_folders') || '[]');
+let opts = { shuffle: true, type: false, srs: false, sound: true };
+
+function save() { localStorage.setItem('fc_folders', JSON.stringify(folders)); }
+
+// ══════════════════════════════════════
+//  GITHUB DECKS
+// ══════════════════════════════════════
+async function loadGitHubDecks() {
+  const section = document.getElementById('github-decks-section');
+  const list = document.getElementById('github-deck-list');
+  const loading = document.getElementById('github-loading');
+  const error = document.getElementById('github-error');
+
+  try {
+    const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_DECKS_PATH}`;
+    const response = await fetch(url);
+    
+    if (!response.ok) throw new Error('Pasta Decks não encontrada');
+    
+    const files = await response.json();
+    const csvFiles = files.filter(f => f.name.endsWith('.csv') && f.type === 'file');
+    
+    if (csvFiles.length === 0) {
+      loading.style.display = 'none';
+      list.innerHTML = '<div style="grid-column:1/-1; font-size:.7rem; opacity:.4; text-align:center; padding:12px;">Nenhum deck encontrado</div>';
+      section.style.display = 'block';
+      return;
+    }
+
+    section.style.display = 'block';
+    list.innerHTML = '';
+    loading.style.display = 'none';
+    error.style.display = 'none';
+
+    // Toggle dropdown abrir/fechar — compatível com iOS Safari
+    const header = document.getElementById('github-decks-header');
+    const body   = document.getElementById('github-decks-body');
+    const arrow  = document.getElementById('github-arrow');
+
+    function toggleGithubDropdown(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const isOpen = body.classList.contains('open');
+      if (isOpen) {
+        body.classList.remove('open');
+        arrow.classList.remove('open');
+      } else {
+        body.classList.add('open');
+        arrow.classList.add('open');
+      }
+    }
+    header.addEventListener('click', toggleGithubDropdown);
+
+    // ── Helper: distinguir tap de scroll no iOS ──────────────────
+    let _touchStartY = 0, _touchStartX = 0;
+    document.addEventListener('touchstart', e => {
+      _touchStartY = e.touches[0].clientY;
+      _touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+    function wasTap(e) {
+      const dy = Math.abs(e.changedTouches[0].clientY - _touchStartY);
+      const dx = Math.abs(e.changedTouches[0].clientX - _touchStartX);
+      return dy < 10 && dx < 10;
+    }
+    // ─────────────────────────────────────────────────────────────
+    header.addEventListener('touchend', toggleGithubDropdown, { passive: false });
+
+    // Impede que toques dentro do body fechem/abram o dropdown
+    body.addEventListener('touchend', e => e.stopPropagation(), { passive: true });
+    body.addEventListener('click', e => e.stopPropagation());
+
+    csvFiles.forEach(file => {
+      const card = document.createElement('div');
+      card.className = 'github-deck-card';
+      card.innerHTML = `
+        <span class="deck-icon">📚</span>
+        <span class="deck-name">${esc(file.name.replace('.csv', ''))}</span>
+        <span class="deck-meta">importar ↓</span>
+      `;
+      card.addEventListener('click', e => { e.stopPropagation(); loadDeckFromGitHub(file.download_url, file.name, card); });
+      card.addEventListener('touchend', e => { if (!wasTap(e)) return; if (!wasTap(e)) return; e.preventDefault(); e.stopPropagation(); loadDeckFromGitHub(file.download_url, file.name, card); }, { passive: false });
+      list.appendChild(card);
+    });
+  } catch (err) {
+    console.error('Erro ao carregar decks do GitHub:', err);
+    loading.style.display = 'none';
+    error.style.display = 'block';
+    error.textContent = '⚠️ Erro ao carregar decks';
+    section.style.display = 'block';
+  }
+}
+
+async function loadDeckFromGitHub(url, filename, card) {
+  try {
+    card.classList.add('loading');
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Erro ao baixar deck');
+    
+    const text = await response.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('#'));
+    const cards = lines.map(l => {
+      const parts = l.split(';');
+      if (parts.length < 2) return null;
+      return { front: parts[0].trim(), back: parts[1].trim().replace(/\\n/g,'\n'), tag: parts[2] ? parts[2].trim() : '', img: parts[3] ? parts[3].trim() : '' };
+    }).filter(Boolean);
+
+    if (!cards.length) {
+      alert(`${filename}: nenhum cartão encontrado.`);
+      card.classList.remove('loading');
+      return;
+    }
+
+    const name = filename.replace('.csv', '');
+
+    // Verifica se já existe pasta com esse nome
+    const existingIdx = folders.findIndex(f => f.name === name);
+    if (existingIdx >= 0) {
+      const update = confirm(`A pasta "${name}" já existe.\n\nOK → Atualizar cartões (progresso SRS preservado)\nCancelar → Não fazer nada`);
+      if (!update) { card.classList.remove('loading'); return; }
+      folders[existingIdx].cards = cards;
+      save(); renderLibrary();
+      card.classList.remove('loading');
+      return;
+    }
+
+    folders.push({ id: Date.now(), name, cards, srs: {}, history: [] });
+    save();
+    renderLibrary();
+    card.classList.remove('loading');
+  } catch (err) {
+    console.error('Erro ao carregar deck:', err);
+    alert('Erro ao carregar deck do GitHub');
+    card.classList.remove('loading');
+  }
+}
+
+// ══════════════════════════════════════
+//  SRS helpers
+// ══════════════════════════════════════
+const SRS_DEFAULT = { interval: 1, ease: 2.5, due: 0 };
+
+function srsRecord(folderIdx, cardIdx) {
+  const f = folders[folderIdx];
+  if (!f.srs) f.srs = {};
+  const key = f.cards[cardIdx].front.trim();
+  if (!f.srs[key]) f.srs[key] = { ...SRS_DEFAULT };
+  return f.srs[key];
+}
+
+function srsDueCards(folderIdx) {
+  const f = folders[folderIdx];
+  const now = Date.now();
+  return f.cards.map((_, i) => i).filter(i => {
+    const key = f.cards[i].front.trim();
+    const r = f.srs && f.srs[key] ? f.srs[key] : SRS_DEFAULT;
+    return r.due <= now;
+  });
+}
+
+function srsUpdate(folderIdx, cardIdx, knew) {
+  const r = srsRecord(folderIdx, cardIdx);
+  if (knew) {
+    r.ease = Math.max(1.3, r.ease + 0.1);
+    r.interval = Math.round(r.interval * r.ease);
+  } else {
+    r.ease = Math.max(1.3, r.ease - 0.2);
+    r.interval = 1;
+  }
+  r.due = Date.now() + r.interval * 86400000;
+  save();
+}
+
+function srsDueCount(folderIdx) {
+  return srsDueCards(folderIdx).length;
+}
+
+// ══════════════════════════════════════
+//  LIBRARY
+// ══════════════════════════════════════
+function renderLibrary() {
+  const grid = document.getElementById('folder-grid');
+  grid.innerHTML = '';
+  if (folders.length === 0) {
+    grid.innerHTML = '<div class="empty-hint">Nenhuma pasta ainda — importe um CSV para começar</div>';
+    return;
+  }
+  folders.forEach((f, i) => {
+    const due = srsDueCount(i);
+    const lastSessions = (f.history || []).slice(-3).reverse();
+    const streakTxt = lastSessions.map(s => `${s.pct}%`).join(' · ');
+    const card = document.createElement('div');
+    card.className = 'folder-card';
+    card.innerHTML = `
+      <div class="folder-icon">📁</div>
+      <div class="folder-title">${esc(f.name)}</div>
+      <div class="folder-meta">${f.cards.length} cartão${f.cards.length!==1?'ões':''}</div>
+      ${streakTxt ? `<div class="folder-streak">📈 ${streakTxt}</div>` : ''}
+      ${due > 0 ? `<div class="srs-due">${due} p/ revisar</div>` : ''}
+      <button class="folder-del" data-i="${i}" title="Excluir">✕</button>
+    `;
+    card.addEventListener('click', e => { if (!e.target.classList.contains('folder-del')) openFolder(i); });
+    card.addEventListener('touchend', e => { if (!wasTap(e)) return;
+      if (e.target.classList.contains('folder-del')) return;
+      e.preventDefault(); openFolder(i);
+    }, { passive: false });
+    card.querySelector('.folder-del').addEventListener('click', e => {
+      e.stopPropagation();
+      if (confirm(`Excluir "${f.name}"?`)) { folders.splice(i,1); save(); renderLibrary(); }
+    });
+    card.querySelector('.folder-del').addEventListener('touchend', e => { if (!wasTap(e)) return;
+      e.preventDefault(); e.stopPropagation();
+      if (confirm(`Excluir "${f.name}"?`)) { folders.splice(i,1); save(); renderLibrary(); }
+    }, { passive: false });
+    grid.appendChild(card);
+  });
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Import ──
+const fileInput = document.getElementById('file-input');
+fileInput.addEventListener('change', e => { handleFiles(Array.from(e.target.files)); fileInput.value=''; });
+
+function handleFiles(files) {
+  if (!files.length) return;
+  files.forEach((file, fi) => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const lines = ev.target.result.split(/\r?\n/).filter(l=>l.trim()&&!l.startsWith('#'));
+      const cards = lines.map(l => {
+        const parts = l.split(';'); if (parts.length < 2) return null;
+        return { front: parts[0].trim(), back: parts[1].trim().replace(/\\n/g,'\n'), tag: parts[2] ? parts[2].trim() : '', img: parts[3] ? parts[3].trim() : '' };
+      }).filter(Boolean);
+      if (!cards.length) { alert(`${file.name}: nenhum cartão encontrado.`); return; }
+      const name = file.name.replace(/\.[^.]+$/,'');
+      // verifica duplicata
+      const existingIdx = folders.findIndex(f => f.name === name);
+      if (existingIdx >= 0) {
+        const update = confirm(`A pasta "${name}" já existe.\n\nOK → Atualizar cartões (progresso SRS preservado)\nCancelar → Não fazer nada`);
+        if (!update) return;
+        folders[existingIdx].cards = cards;
+        save(); renderLibrary(); return;
+      }
+      folders.push({ id: Date.now()+fi, name, cards, srs:{}, history:[] });
+      save(); renderLibrary();
+    };
+    reader.readAsText(file,'UTF-8');
+  });
+}
+
+// ══════════════════════════════════════
+//  STUDY STATE
+// ══════════════════════════════════════
+let activeFolderIdx = -1;
+let deck=[], queue=[], cursor=0, known=0, unknown=0, noList=[], yesList=[], flipped=false;
+let typeChecked = false;
+
+let activeTags = new Set(); // tags selecionadas (vazio = todas)
+
+function openFolder(idx) {
+  activeFolderIdx = idx;
+  deck = folders[idx].cards;
+  activeTags = new Set();
+  document.getElementById('study-folder-name').textContent = folders[idx].name;
+  document.getElementById('screen-library').style.display = 'none';
+  document.getElementById('screen-study').classList.add('visible');
+  syncOptButtons();
+  buildTagFilter();
+  startRound(getFilteredIndices());
+}
+
+function buildTagFilter() {
+  const tags = [...new Set(deck.map(c => c.tag).filter(Boolean))];
+  const row   = document.getElementById('tag-filter-row');
+  const dd    = document.getElementById('tag-dropdown');
+  const trig  = document.getElementById('tag-trigger');
+
+  if (tags.length === 0) { row.style.display = 'none'; return; }
+  row.style.display = 'block';
+  dd.innerHTML = '';
+
+  // Opção "Todas"
+  const allOpt = document.createElement('div');
+  allOpt.className = 'tag-opt tag-opt-all selected';
+  allOpt.dataset.tag = '__all__';
+  allOpt.innerHTML = `<span class="t-check"></span><span class="t-name">Todas as tags</span><span class="t-count">${deck.length}</span>`;
+  allOpt.addEventListener('click', e => { e.stopPropagation(); toggleTag('__all__'); });
+  allOpt.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); toggleTag('__all__'); }, { passive: false });
+  dd.appendChild(allOpt);
+
+  tags.forEach(tag => {
+    const count = deck.filter(c => c.tag === tag).length;
+    const opt   = document.createElement('div');
+    opt.className = 'tag-opt';
+    opt.dataset.tag = tag;
+    opt.innerHTML = `<span class="t-check"></span><span class="t-name">${esc(tag)}</span><span class="t-count">${count}</span>`;
+    opt.addEventListener('click', e => { e.stopPropagation(); toggleTag(tag); });
+    opt.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); toggleTag(tag); }, { passive: false });
+    dd.appendChild(opt);
+  });
+
+  // Toggle dropdown — compatível com iOS Safari
+  function toggleTagDropdown(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const isOpen = dd.classList.contains('open');
+    if (isOpen) {
+      trig.classList.remove('open');
+      dd.classList.remove('open');
+    } else {
+      trig.classList.add('open');
+      dd.classList.add('open');
+    }
+  }
+  trig.addEventListener('click', toggleTagDropdown);
+  trig.addEventListener('touchend', toggleTagDropdown, { passive: false });
+
+  function closeTagDropdown() {
+    trig.classList.remove('open');
+    dd.classList.remove('open');
+  }
+  document.addEventListener('click', closeTagDropdown);
+  document.addEventListener('touchend', closeTagDropdown, { passive: true });
+  dd.addEventListener('click', e => e.stopPropagation());
+  dd.addEventListener('touchend', e => e.stopPropagation(), { passive: true });
+
+  updateTagPreview();
+}
+
+function toggleTag(tag) {
+  if (tag === '__all__') {
+    activeTags = new Set();
+  } else {
+    if (activeTags.has(tag)) activeTags.delete(tag);
+    else activeTags.add(tag);
+  }
+  // Atualiza checkmarks
+  document.querySelectorAll('#tag-dropdown .tag-opt').forEach(opt => {
+    const isAll = opt.dataset.tag === '__all__';
+    opt.classList.toggle('selected', isAll ? activeTags.size === 0 : activeTags.has(opt.dataset.tag));
+  });
+  updateTagPreview();
+  startRound(getFilteredIndices());
+}
+
+function updateTagPreview() {
+  const preview = document.getElementById('tag-selected-preview');
+  if (activeTags.size === 0) {
+    preview.textContent = `Todas as tags (${deck.length})`;
+  } else {
+    const total = getFilteredIndices().length;
+    preview.textContent = [...activeTags].join(', ') + ` (${total})`;
+  }
+}
+
+function getFilteredIndices() {
+  let base;
+  if (activeTags.size === 0) {
+    base = deck.map((_,i) => i);
+  } else {
+    base = deck.map((c,i) => activeTags.has(c.tag) ? i : -1).filter(i => i >= 0);
+  }
+  if (opts.srs) {
+    const due = srsDueCards(activeFolderIdx).filter(i => base.includes(i));
+    return due.length > 0 ? due : base;
+  }
+  return base;
+}
+
+document.getElementById('btn-back').addEventListener('click', () => {
+  document.getElementById('screen-study').classList.remove('visible');
+  document.getElementById('screen-library').style.display = 'flex';
+  document.getElementById('state-done').classList.remove('visible');
+  document.getElementById('tag-filter-row').style.display = 'none';
+  showStudyWidgets(true);
+  updateStats(0,0);
+  activeTags = new Set();
+  renderLibrary();
+});
+
+// ══════════════════════════════════════
+//  OPTIONS
+// ══════════════════════════════════════
+function syncOptButtons() {
+  ['shuffle','type','srs','sound'].forEach(k => {
+    document.getElementById('opt-'+k).classList.toggle('active', opts[k]);
+  });
+  document.getElementById('card-hint').textContent =
+    opts.type ? 'leia a frente e pense na resposta' : 'clique para revelar · espaço';
+}
+
+['shuffle','type','srs','sound'].forEach(k => {
+  document.getElementById('opt-'+k).addEventListener('click', () => {
+    opts[k] = !opts[k];
+    syncOptButtons();
+  });
+});
+
+// ══════════════════════════════════════
+//  ROUND
+// ══════════════════════════════════════
+function startRound(indices) {
+  queue  = opts.shuffle ? shuffle([...indices]) : [...indices];
+  cursor = 0; known = 0; unknown = 0; noList = []; yesList = [];
+  updateStats(0,0);
+  document.getElementById('state-done').classList.remove('visible');
+  showStudyWidgets(true);
+  updateQuickReview();
+  showCard();
+}
+
+function showStudyWidgets(on) {
+  document.getElementById('card-scene').style.display  = on ? '' : 'none';
+  document.getElementById('actions').style.display     = on ? '' : 'none';
+  document.getElementById('deck-bar').style.display    = on ? '' : 'none';
+  document.getElementById('type-area').classList.toggle('visible', false);
+  if (!on) document.getElementById('quick-review-bar').classList.remove('visible');
+}
+
+function showCard() {
+  if (cursor >= queue.length) { endRound(); return; }
+  const card = deck[queue[cursor]];
+  document.getElementById('front-text').textContent = card.front;
+  document.getElementById('back-text').innerHTML = card.back.split('\n').map(l => `<span style="display:block">${esc(l)}</span>`).join('');
+  flipped = false; typeChecked = false;
+  document.getElementById('card-inner').classList.remove('flipped');
+
+  // Imagem na frente do card
+  const cardImg = document.getElementById('card-front-img');
+  const cardFront = document.querySelector('.card-front');
+  if (card.img) {
+    cardImg.src = card.img;
+    cardImg.classList.add('visible');
+    cardFront.classList.add('has-img');
+  } else {
+    cardImg.src = '';
+    cardImg.classList.remove('visible');
+    cardFront.classList.remove('has-img');
+  }
+
+  // Fonte dinâmica
+  const len  = card.front.length;
+  const size = len <= 3 ? '3.2rem' : len <= 6 ? '2.6rem' : len <= 12 ? '2rem' : len <= 24 ? '1.7rem' : '1.3rem';
+  document.getElementById('front-text').style.fontSize = size;
+  document.getElementById('back-text').style.fontSize  = card.back.split('\n')[0].length <= 12 ? '1.9rem' : '1.7rem';
+
+  // Botão de som
+  const speakBtn = document.getElementById('btn-speak-front');
+  speakBtn.style.display = opts.sound ? 'flex' : 'none';
+  speakBtn.classList.remove('speaking');
+
+  if (opts.type) {
+    document.getElementById('type-area').classList.add('visible');
+    document.getElementById('type-input').value = '';
+    document.getElementById('type-input').className = '';
+    document.getElementById('type-feedback').textContent = '';
+    document.getElementById('type-answer-reveal').textContent = '';
+    document.getElementById('btn-type-check').textContent = 'Confirmar · Enter';
+    document.getElementById('btn-flip').style.display = 'none';
+    document.getElementById('btn-no').style.display   = 'none';
+    document.getElementById('btn-yes').style.display  = 'none';
+    setTimeout(() => document.getElementById('type-input').focus(), 80);
+  } else {
+    document.getElementById('type-area').classList.remove('visible');
+    document.getElementById('btn-flip').style.display = '';
+    document.getElementById('btn-no').style.display   = '';
+    document.getElementById('btn-yes').style.display  = '';
+  }
+  updateProgress();
+}
+
+function updateProgress() {
+  const total = queue.length;
+  document.getElementById('deck-pos').textContent = `${cursor+1} / ${total}`;
+  document.getElementById('progress-bar').style.width = `${(cursor/total)*100}%`;
+}
+
+function updateStats(k,u) {
+  document.getElementById('stat-no').textContent  = `${u} não sei`;
+  document.getElementById('stat-yes').textContent = `${k} já sei`;
+}
+
+// ══════════════════════════════════════
+//  FLIP + SOUND
+// ══════════════════════════════════════
+function flipCard() {
+  if (opts.type) return;
+  flipped = !flipped;
+  document.getElementById('card-inner').classList.toggle('flipped', flipped);
+  if (flipped && opts.sound) speakFront();
+}
+
+document.getElementById('card-inner').addEventListener('click', flipCard);
+document.getElementById('btn-flip').addEventListener('click', flipCard);
+
+// ══════════════════════════════════════
+//  ROMAJI → HIRAGANA
+//  Converte texto em romaji para hiragana
+//  para que a voz japonesa pronuncie corretamente
+// ══════════════════════════════════════
+function romajiToHiragana(str) {
+  // Normaliza: lowercase, remove traços/hífens usados como separadores de sílaba
+  let s = str.toLowerCase().replace(/[-·]/g, '');
+
+  // Tabela de conversão — ordem importa: mais longos primeiro
+  const map = [
+    // sons especiais
+    ['tchi','っち'],['cchi','っち'],
+    ['ttsu','っつ'],['xtsu','っつ'],
+    ['tta','った'],['tto','っと'],['tte','って'],
+    ['kka','っか'],['kki','っき'],['kku','っく'],['kke','っけ'],['kko','っこ'],
+    ['ssa','っさ'],['ssi','っし'],['ssu','っす'],['sse','っせ'],['sso','っそ'],
+    ['ppa','っぱ'],['ppi','っぴ'],['ppu','っぷ'],['ppe','っぺ'],['ppo','っぽ'],
+    ['hha','っは'],
+    // combinações com y
+    ['sha','しゃ'],['shi','し'],['shu','しゅ'],['she','しぇ'],['sho','しょ'],
+    ['chi','ち'],['cha','ちゃ'],['chu','ちゅ'],['che','ちぇ'],['cho','ちょ'],
+    ['tsu','つ'],
+    ['kya','きゃ'],['kyi','き'],['kyu','きゅ'],['kye','きぇ'],['kyo','きょ'],
+    ['nya','にゃ'],['nyu','にゅ'],['nye','にぇ'],['nyo','にょ'],
+    ['hya','ひゃ'],['hyu','ひゅ'],['hye','ひぇ'],['hyo','ひょ'],
+    ['mya','みゃ'],['myu','みゅ'],['mye','みぇ'],['myo','みょ'],
+    ['rya','りゃ'],['ryu','りゅ'],['rye','りぇ'],['ryo','りょ'],
+    ['gya','ぎゃ'],['gyu','ぎゅ'],['gye','ぎぇ'],['gyo','ぎょ'],
+    ['zya','じゃ'],['zyu','じゅ'],['zye','じぇ'],['zyo','じょ'],
+    ['ja','じゃ'],['ji','じ'],['ju','じゅ'],['je','じぇ'],['jo','じょ'],
+    ['dya','ぢゃ'],['dyu','ぢゅ'],['dye','ぢぇ'],['dyo','ぢょ'],
+    ['bya','びゃ'],['byu','びゅ'],['bye','びぇ'],['byo','びょ'],
+    ['pya','ぴゃ'],['pyu','ぴゅ'],['pye','ぴぇ'],['pyo','ぴょ'],
+    ['tya','ちゃ'],['tyu','ちゅ'],['tye','ちぇ'],['tyo','ちょ'],
+    ['fu','ふ'],
+    // vogais longas (ou, oo, uu, aa, ii, ee)
+    ['ou','おう'],['oo','おお'],['uu','うう'],['aa','ああ'],['ii','いい'],['ee','ええ'],
+    // simples
+    ['a','あ'],['i','い'],['u','う'],['e','え'],['o','お'],
+    ['ka','か'],['ki','き'],['ku','く'],['ke','け'],['ko','こ'],
+    ['sa','さ'],['si','し'],['su','す'],['se','せ'],['so','そ'],
+    ['ta','た'],['ti','ち'],['tu','つ'],['te','て'],['to','と'],
+    ['na','な'],['ni','に'],['nu','ぬ'],['ne','ね'],['no','の'],
+    ['ha','は'],['hi','ひ'],['hu','ふ'],['he','へ'],['ho','ほ'],
+    ['ma','ま'],['mi','み'],['mu','む'],['me','め'],['mo','も'],
+    ['ya','や'],['yu','ゆ'],['yo','よ'],
+    ['ra','ら'],['ri','り'],['ru','る'],['re','れ'],['ro','ろ'],
+    ['wa','わ'],['wi','ゐ'],['we','ゑ'],['wo','を'],
+    ['ga','が'],['gi','ぎ'],['gu','ぐ'],['ge','げ'],['go','ご'],
+    ['za','ざ'],['zi','じ'],['zu','ず'],['ze','ぜ'],['zo','ぞ'],
+    ['da','だ'],['di','ぢ'],['du','づ'],['de','で'],['do','ど'],
+    ['ba','ば'],['bi','び'],['bu','ぶ'],['be','べ'],['bo','ぼ'],
+    ['pa','ぱ'],['pi','ぴ'],['pu','ぷ'],['pe','ぺ'],['po','ぽ'],
+    ['nn','ん'],['n\'','ん'],
+    // n antes de consoante (exceto n+vogal)
+  ];
+
+  let result = '';
+  let i = 0;
+  while (i < s.length) {
+    // trata 'n' isolado antes de consoante ou fim de string
+    if (s[i] === 'n' && (i+1 >= s.length || !'aiueoyn'.includes(s[i+1]))) {
+      result += 'ん'; i++; continue;
+    }
+    let matched = false;
+    for (const [rom, hira] of map) {
+      if (s.startsWith(rom, i)) {
+        result += hira; i += rom.length; matched = true; break;
+      }
+    }
+    if (!matched) {
+      // caractere não mapeado (já é kana, kanji, espaço, etc.) — passa direto
+      result += s[i]; i++;
+    }
+  }
+  return result;
+}
+
+// Detecta se o texto é predominantemente romaji (latim) ou já tem kana/kanji
+function isRomaji(text) {
+  const kanaKanji = text.match(/[\u3040-\u30ff\u4e00-\u9fff]/g) || [];
+  const latin     = text.match(/[a-zA-Z]/g) || [];
+  return latin.length > kanaKanji.length;
+}
+
+function speakText(raw, btnEl) {
+  if (!('speechSynthesis' in window)) return;
+  const textToSpeak = isRomaji(raw) ? romajiToHiragana(raw) : raw;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(textToSpeak);
+  const voices = window.speechSynthesis.getVoices();
+  let selectedVoice = voices.find(v => v.lang.startsWith('ja') && v.localService && !v.name.includes('Google'));
+  if (!selectedVoice) selectedVoice = voices.find(v => v.lang.startsWith('ja') && !v.name.includes('Google'));
+  if (!selectedVoice) selectedVoice = voices.find(v => v.lang.startsWith('ja'));
+  if (selectedVoice) utt.voice = selectedVoice;
+  utt.lang   = 'ja-JP';
+  utt.rate   = isIOS ? 0.85 : 0.88;
+  utt.pitch  = 1.0;
+  utt.volume = 1.0;
+  if (btnEl) btnEl.classList.add('speaking');
+  utt.onend  = () => { if (btnEl) btnEl.classList.remove('speaking'); };
+  utt.onerror = () => { if (btnEl) btnEl.classList.remove('speaking'); };
+  window.speechSynthesis.speak(utt);
+}
+
+function speakFront() {
+  const btn = document.getElementById('btn-speak');
+  speakText(deck[queue[cursor]].front, btn);
+}
+
+// Carrega vozes quando estiverem prontas
+if (window.speechSynthesis) {
+  window.speechSynthesis.addEventListener('voiceschanged', () => {
+    window.speechSynthesis.getVoices();
+  });
+}
+
+document.getElementById('btn-speak-front').addEventListener('click', e => {
+  e.stopPropagation();
+  const btn = document.getElementById('btn-speak-front');
+  speakText(deck[queue[cursor]].front, btn);
+});
+
+// ══════════════════════════════════════
+//  TYPING MODE
+// ══════════════════════════════════════
+function normalizeAnswer(s) {
+  return s.trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^\w\u3040-\u30ff\u4e00-\u9fff]/g,'');
+}
+
+function checkType() {
+  if (typeChecked) { advanceCard(typeChecked === 'yes'); return; }
+  const input  = document.getElementById('type-input');
+  const answer = deck[queue[cursor]].back;
+  const variants = answer.split(/[—\/\(]/).map(normalizeAnswer).filter(Boolean);
+  const typed    = normalizeAnswer(input.value);
+  const correct  = variants.some(v => v === typed || v.startsWith(typed) || typed.startsWith(v));
+
+  if (correct) {
+    input.className = 'correct';
+    document.getElementById('type-feedback').textContent = '✓ Correto!';
+    document.getElementById('type-feedback').style.color = '#a8d5b9';
+    typeChecked = 'yes';
+    yesList.push(queue[cursor]);
+    known++; updateStats(known, unknown);
+    if (opts.srs) srsUpdate(activeFolderIdx, queue[cursor], true);
+    if (opts.sound) speakFront();
+  } else {
+    input.className = 'wrong';
+    document.getElementById('type-feedback').textContent = '✗ Errado';
+    document.getElementById('type-feedback').style.color = '#f5c6c1';
+    document.getElementById('type-answer-reveal').textContent = `Resposta: ${answer}`;
+    typeChecked = 'no';
+    noList.push(queue[cursor]);
+    unknown++; updateStats(known, unknown);
+    if (opts.srs) srsUpdate(activeFolderIdx, queue[cursor], false);
+    if (opts.sound) speakFront();
+  }
+  updateQuickReview();
+  document.getElementById('btn-type-check').textContent = 'Próximo · Enter';
+}
+
+function advanceCard(knew) {
+  if (!opts.type && opts.srs) srsUpdate(activeFolderIdx, queue[cursor], knew);
+  cursor++; showCard();
+}
+
+document.getElementById('btn-type-check').addEventListener('click', checkType);
+document.getElementById('type-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkType();
+});
+
+// ══════════════════════════════════════
+//  JUDGMENT BUTTONS
+// ══════════════════════════════════════
+document.getElementById('btn-no').addEventListener('click', () => {
+  noList.push(queue[cursor]); unknown++; updateStats(known,unknown);
+  if (opts.srs) srsUpdate(activeFolderIdx, queue[cursor], false);
+  updateQuickReview();
+  advanceCard(false);
+});
+
+document.getElementById('btn-yes').addEventListener('click', () => {
+  yesList.push(queue[cursor]); known++; updateStats(known,unknown);
+  if (opts.srs) srsUpdate(activeFolderIdx, queue[cursor], true);
+  updateQuickReview();
+  advanceCard(true);
+});
+
+// ══════════════════════════════════════
+//  QUICK REVIEW BAR
+// ══════════════════════════════════════
+function updateQuickReview() {
+  const bar = document.getElementById('quick-review-bar');
+  const hasAny = noList.length > 0 || yesList.length > 0;
+  bar.classList.toggle('visible', hasAny);
+  document.getElementById('qr-no-count').textContent  = noList.length;
+  document.getElementById('qr-yes-count').textContent = yesList.length;
+  document.getElementById('qr-no').style.opacity  = noList.length  > 0 ? '1' : '.35';
+  document.getElementById('qr-yes').style.opacity = yesList.length > 0 ? '1' : '.35';
+  document.getElementById('qr-no').style.pointerEvents  = noList.length  > 0 ? '' : 'none';
+  document.getElementById('qr-yes').style.pointerEvents = yesList.length > 0 ? '' : 'none';
+}
+
+document.getElementById('qr-no').addEventListener('click', () => {
+  if (noList.length) startRound([...noList]);
+});
+document.getElementById('qr-yes').addEventListener('click', () => {
+  if (yesList.length) startRound([...yesList]);
+});
+document.getElementById('qr-restart').addEventListener('click', () => {
+  startRound(getFilteredIndices());
+});
+
+// ══════════════════════════════════════
+//  END ROUND
+// ══════════════════════════════════════
+function endRound() {
+  showStudyWidgets(false);
+  const total = queue.length;
+  const pct   = total > 0 ? Math.round((known/total)*100) : 0;
+  document.getElementById('done-summary').textContent =
+    `Você acertou ${known} de ${total} cartões (${pct}%). ` +
+    (noList.length > 0 ? `${noList.length} para revisar.` : 'Pasta dominada! 🎉');
+
+  const f = folders[activeFolderIdx];
+  if (!f.history) f.history = [];
+  f.history.push({ date: new Date().toLocaleDateString('pt-BR'), pct, known, total });
+  if (f.history.length > 10) f.history = f.history.slice(-10);
+  save();
+
+  const hist = document.getElementById('stats-history');
+  hist.innerHTML = f.history.slice(-5).reverse()
+    .map(s => `<div class="stat-pill">${s.date} — ${s.pct}%</div>`).join('');
+
+  document.getElementById('btn-retry-no').style.display = noList.length>0 ? '' : 'none';
+  document.getElementById('state-done').classList.add('visible');
+  document.getElementById('progress-bar').style.width = '100%';
+  renderLibrary();
+}
+
+document.getElementById('btn-restart').addEventListener('click', () => startRound(getFilteredIndices()));
+
+document.getElementById('btn-retry-no').addEventListener('click', () => { if (noList.length) startRound(noList); });
+
+// ══════════════════════════════════════
+//  KEYBOARD
+// ══════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('screen-study').classList.contains('visible')) return;
+  if (document.getElementById('state-done').classList.contains('visible')) return;
+  if (opts.type) return;
+  if (e.key === 'ArrowLeft')  document.getElementById('btn-no').click();
+  if (e.key === 'ArrowRight') document.getElementById('btn-yes').click();
+  if (e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); flipCard(); }
+});
+
+// ══════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════
+function shuffle(arr) {
+  for (let i=arr.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr;
+}
+
+window.speechSynthesis && window.speechSynthesis.addEventListener('voiceschanged', () => {});
+
+// ── INIT ──
+loadGitHubDecks();
+renderLibrary();
+</script>
+</body>
+</html>
